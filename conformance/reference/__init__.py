@@ -1,1 +1,1 @@
-"""An in-memory service that follows the shared contract. The suite's answer key."""
+"""In-memory reference implementation of the storage API."""

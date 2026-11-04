@@ -1,36 +1,27 @@
-"""The shared path rule (memo, "Paths").
-
-Callers may send a path with or without a leading ``/``. The service turns it into one
-canonical form that starts with ``/``, and every response uses that form. Empty paths,
-empty segments, ``.``, ``..``, and a trailing ``/`` are rejected.
-"""
+"""Path validation. Paths are returned with a leading slash."""
 
 from conformance.reference.errors import invalid_request
 
-# Team 6's limit, the only one confirmed so far. The shared limit is the smallest one
-# all three services support.
 MAX_PATH_BYTES = 1024
 
 
-def canonical_path(raw: str) -> str:
-    """Return the canonical form of a file or folder path, or raise ``invalid_request``."""
+def clean_path(raw: str) -> str:
+    """Add a leading slash and reject empty, '.', '..' or trailing-slash paths."""
     path = raw if raw.startswith("/") else "/" + raw
-    problem = None
-    if path == "/":
-        problem = "path must not be empty"
-    elif path.endswith("/"):
-        problem = "path must not end with /"
-    elif any(segment in {"", ".", ".."} for segment in path[1:].split("/")):
-        problem = "path must not contain empty, '.' or '..' segments"
-    elif len(path.encode()) > MAX_PATH_BYTES:
-        problem = f"path must be at most {MAX_PATH_BYTES} UTF-8 bytes"
-    if problem is not None:
-        raise invalid_request(problem)
+    if path == "/" or path.endswith("/"):
+        msg = "path must not be empty or end with /"
+        raise invalid_request(msg)
+    if any(part in {"", ".", ".."} for part in path[1:].split("/")):
+        msg = "path must not contain empty, '.' or '..' parts"
+        raise invalid_request(msg)
+    if len(path.encode()) > MAX_PATH_BYTES:
+        msg = f"path is longer than {MAX_PATH_BYTES} bytes"
+        raise invalid_request(msg)
     return path
 
 
-def canonical_folder(raw: str) -> str:
-    """Return the canonical form of a folder path, where ``/`` or ``""`` is the root."""
+def clean_folder(raw: str) -> str:
+    """Like clean_path, but allow the root folder."""
     if raw in {"", "/"}:
         return "/"
-    return canonical_path(raw)
+    return clean_path(raw)

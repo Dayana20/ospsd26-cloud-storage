@@ -1,26 +1,22 @@
-"""The shared error body: {"error": {"code", "message"}} (memo, "Errors", and issue #4).
-
-Every other file checks the body through ``assert_error``. These tests cover the errors
-that happen outside any operation.
-"""
+"""Tests for errors that aren't tied to one operation."""
 
 from http import HTTPStatus
 
 import httpx2
 import pytest
 
-from conformance.tests.conftest import ERRORS_ISSUE, assert_error
+from conformance.tests.conftest import assert_error
 
-pytestmark = pytest.mark.proposed(ERRORS_ISSUE)
+pytestmark = pytest.mark.proposed("error codes, issue #4")
 
 
-def test_an_unknown_route_is_route_not_found(api: httpx2.Client) -> None:
-    """A wrong URL is told apart from a missing file."""
+def test_unknown_route(api: httpx2.Client) -> None:
+    """Unknown route is 404 route_not_found, not not_found."""
     assert_error(api.get("/no-such-route"), HTTPStatus.NOT_FOUND, "route_not_found")
 
 
-def test_a_wrong_method_is_method_not_allowed_with_an_allow_header(api: httpx2.Client) -> None:
-    """A method the path does not accept is 405, and Allow lists the ones it does."""
-    response = api.post("/health")
-    assert_error(response, HTTPStatus.METHOD_NOT_ALLOWED, "method_not_allowed")
-    assert "GET" in response.headers["Allow"]
+def test_wrong_method(api: httpx2.Client) -> None:
+    """Wrong method is 405 with an Allow header."""
+    resp = api.post("/health")
+    assert_error(resp, HTTPStatus.METHOD_NOT_ALLOWED, "method_not_allowed")
+    assert "GET" in resp.headers["Allow"]

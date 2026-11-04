@@ -1,50 +1,41 @@
-"""The consumer workflow from the memo, run unchanged against every service."""
+"""End-to-end workflow a client would run against any of the services."""
 
 from http import HTTPStatus
 
 import httpx2
 
-from conformance.tests.conftest import assert_error, download, metadata
+from conformance.tests.conftest import assert_error, delete, download, list_folder, metadata, move, upload
 
 
-def test_consumer_workflow(api: httpx2.Client, root: str) -> None:
-    """Upload, read, download, list, move, read again, delete, and confirm it is gone."""
+def test_workflow(api: httpx2.Client, root: str) -> None:
+    """Upload, metadata, download, list, move, metadata, delete, 404."""
     data = b"quarterly report\n" * 1000
     path = root + "/reports/q3.txt"
     new_path = root + "/archive/q3-final.txt"
 
-    # Upload a file.
-    created = api.post("/files", data={"path": path}, files={"file": ("q3.txt", data)})
-    assert created.status_code == HTTPStatus.CREATED, created.text
+    resp = upload(api, path, data)
+    assert resp.status_code == HTTPStatus.CREATED, resp.text
 
-    # Read its metadata.
-    info = metadata(api, path)
-    assert info.status_code == HTTPStatus.OK
-    assert info.json()["size"] == len(data)
+    resp = metadata(api, path)
+    assert resp.status_code == HTTPStatus.OK
+    assert resp.json()["size"] == len(data)
 
-    # Download it and compare the bytes.
-    downloaded = download(api, path)
-    assert downloaded.status_code == HTTPStatus.OK
-    assert downloaded.content == data
+    resp = download(api, path)
+    assert resp.status_code == HTTPStatus.OK
+    assert resp.content == data
 
-    # List its folder.
-    listing = api.get("/files", params={"path": root + "/reports"})
-    assert listing.status_code == HTTPStatus.OK
-    assert [entry["path"] for entry in listing.json()] == [path]
+    resp = list_folder(api, root + "/reports")
+    assert resp.status_code == HTTPStatus.OK
+    assert [e["path"] for e in resp.json()] == [path]
 
-    # Move it.
-    moved = api.patch("/files", params={"path": path}, json={"new_path": new_path})
-    assert moved.status_code == HTTPStatus.OK, moved.text
-    assert moved.json()["path"] == new_path
+    resp = move(api, path, new_path)
+    assert resp.status_code == HTTPStatus.OK, resp.text
+    assert resp.json()["path"] == new_path
 
-    # Read its metadata at the new path.
-    info = metadata(api, new_path)
-    assert info.status_code == HTTPStatus.OK
-    assert info.json()["size"] == len(data)
+    resp = metadata(api, new_path)
+    assert resp.status_code == HTTPStatus.OK
+    assert resp.json()["size"] == len(data)
     assert_error(metadata(api, path), HTTPStatus.NOT_FOUND, "not_found")
 
-    # Delete it.
-    assert api.delete("/files", params={"path": new_path}).status_code == HTTPStatus.NO_CONTENT
-
-    # Confirm that metadata now returns 404.
+    assert delete(api, new_path).status_code == HTTPStatus.NO_CONTENT
     assert_error(metadata(api, new_path), HTTPStatus.NOT_FOUND, "not_found")

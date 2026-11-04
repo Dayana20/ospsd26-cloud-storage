@@ -1,47 +1,49 @@
-"""Create: POST /files with the form fields file and path (memo, "Create")."""
+"""Tests for POST /files (create)."""
 
 from http import HTTPStatus
 
 import httpx2
 import pytest
 
-from conformance.tests.conftest import ERRORS_ISSUE, assert_error, create, download, upload
+from conformance.tests.conftest import assert_error, create, download, list_folder, upload
 
 
-def test_create_returns_201_and_the_file_info(api: httpx2.Client, root: str) -> None:
-    """A new file is 201 with its file info."""
-    data = b"%PDF-1.7 content"
-    response = upload(api, root + "/report.pdf", data)
-    assert response.status_code == HTTPStatus.CREATED
-    info = response.json()
+def test_create(api: httpx2.Client, root: str) -> None:
+    """Create returns 201 and the file info."""
+    resp = upload(api, root + "/report.pdf", b"pdf data")
+    assert resp.status_code == HTTPStatus.CREATED
+    info = resp.json()
     assert info["path"] == root + "/report.pdf"
     assert info["name"] == "report.pdf"
-    assert info["size"] == len(data)
+    assert info["size"] == len(b"pdf data")
 
 
-def test_create_accepts_an_empty_file(api: httpx2.Client, root: str) -> None:
-    """A 0-byte file is a valid file."""
+def test_create_empty_file(api: httpx2.Client, root: str) -> None:
+    """0-byte files are allowed."""
     assert create(api, root + "/empty.txt", b"")["size"] == 0
 
 
-def test_create_makes_the_parent_folders(api: httpx2.Client, root: str) -> None:
-    """Creating a file makes its folders listable, with no separate folder call."""
+def test_create_in_new_folder(api: httpx2.Client, root: str) -> None:
+    """Parent folders are created automatically."""
     create(api, root + "/a/b/c.txt")
-    assert api.get("/files", params={"path": root + "/a/b"}).status_code == HTTPStatus.OK
+    assert list_folder(api, root + "/a/b").status_code == HTTPStatus.OK
 
 
-@pytest.mark.proposed(ERRORS_ISSUE)
-def test_creating_an_existing_file_is_a_conflict_and_keeps_the_old_contents(api: httpx2.Client, root: str) -> None:
-    """Create never overwrites, even with the same bytes."""
+@pytest.mark.proposed("409 vs 422, issue #4")
+def test_create_existing_file(api: httpx2.Client, root: str) -> None:
+    """Creating over an existing file gives 409 and doesn't overwrite it."""
     create(api, root + "/file.txt", b"old")
     assert_error(upload(api, root + "/file.txt", b"new"), HTTPStatus.CONFLICT, "conflict")
     assert download(api, root + "/file.txt").content == b"old"
 
 
-@pytest.mark.parametrize("missing", ["file", "path"])
-def test_a_missing_form_field_is_invalid_request(api: httpx2.Client, root: str, missing: str) -> None:
-    """Both form fields are required."""
-    data = {} if missing == "path" else {"path": root + "/a.txt"}
-    files = None if missing == "file" else {"file": ("f", b"x")}
-    response = api.post("/files", data=data, files=files)
-    assert_error(response, HTTPStatus.BAD_REQUEST, "invalid_request")
+def test_create_missing_file_field(api: httpx2.Client, root: str) -> None:
+    """The file field is required."""
+    resp = api.post("/files", data={"path": root + "/a.txt"})
+    assert_error(resp, HTTPStatus.BAD_REQUEST, "invalid_request")
+
+
+def test_create_missing_path_field(api: httpx2.Client) -> None:
+    """The path field is required."""
+    resp = api.post("/files", files={"file": ("f", b"x")})
+    assert_error(resp, HTTPStatus.BAD_REQUEST, "invalid_request")

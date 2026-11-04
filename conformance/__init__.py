@@ -1,1 +1,1 @@
-"""The shared conformance suite and its in-memory reference service. See README.md."""
+"""Conformance tests for the storage API."""
