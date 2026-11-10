@@ -1,14 +1,13 @@
 [project]
-name = "ta-assignment"
+name = "ospsd26-cloud-storage"
 version = "0.1.0"
-description = "Template repository for a mail client"
+description = "Shared contract for cloud storage services"
 readme = "README.md"
-requires-python = ">=3.11"
-dependencies = []
+requires-python = ">=3.12"
+dependencies = ["cloud-storage-api"]
 
 [project.optional-dependencies]
 dev = [
-    "google-api-python-client-stubs>=1.30.0",
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.6.15",
     "mkdocstrings-python>=1.16.12",
@@ -22,13 +21,15 @@ dev = [
 
 [tool.uv.workspace]
 members = [
-  "src/mail_client_api",
-  "src/gmail_client_impl",
+  "src/cloud_storage_api",
 ]
+
+[tool.uv.sources]
+cloud-storage-api = { workspace = true }
 
 [tool.ruff]
 line-length = 130 # high for top level due to tests
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -42,22 +43,14 @@ per-file-ignores = { "**/test_*.py" = ["TRY300", "BLE001", "ANN401", "SLF001", "
 [tool.mypy]
 strict = true
 explicit_package_bases = true # Required for src layout
-mypy_path = ["src/mail_client_api/src", "src/gmail_client_impl/src"]
+mypy_path = ["src/cloud_storage_api/src"]
 ignore_missing_imports = false
 warn_unused_ignores = false
 
-# Allow untyped imports for specific modules
-[[tool.mypy.overrides]]
-module = [
-    "google.*",
-    "googleapiclient.*",
-]
-ignore_missing_imports = true
-
 [tool.pytest.ini_options]
 pythonpath = [
-    ".", 
-    "src"
+    ".",
+    "src/cloud_storage_api/src",
 ]
 testpaths = ["tests", "src/*/tests"]
 addopts = ["--cov", "--cov-report=term-missing", "--import-mode=importlib"]
