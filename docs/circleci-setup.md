@@ -21,7 +21,7 @@ The CI/CD pipeline includes:
 
 ### 2. Environment Variables
 
-Create a **Context** named `gmail-client` with:
+Create a **Context** named `cloud-storage` with:
 
 | Variable | Description |
 |----------|-------------|
@@ -65,7 +65,7 @@ uv run pytest src/ tests/ -m "not local_credentials"
 
 **"Extra 'dev' is not defined"**: Use `[project.optional-dependencies]` instead of `[dependency-groups]` in `pyproject.toml`
 
-**Missing environment variables**: Ensure `gmail-client` context is created and applied to integration jobs
+**Missing environment variables**: Ensure `cloud-storage` context is created and applied to integration jobs
 
 **Coverage failures**: Project requires 85% coverage - add tests or adjust threshold
 

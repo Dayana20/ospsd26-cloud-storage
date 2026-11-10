@@ -1,68 +1,26 @@
-"""Main module for demonstrating the mail client."""
+"""Demonstrate the document storage API."""
 
-# ta-assignment/main.py
-
-import contextlib
-import logging
-
-import gmail_client_impl  # noqa: F401
-import mail_client_api
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from cloud_storage_api import DocumentStorage
 
 
-def main() -> None:
-    """Initialize the client and demonstrate all mail client methods."""
-    # Now, get_client() returns a GmailClient instance...
-    client = mail_client_api.get_client(interactive=False)
+def main(storage: DocumentStorage) -> None:
+    """List documents, inspect and download one, and optionally delete it."""
+    storage.check_health()
+    files = [item for item in storage.list_files("/") if item.type == "file"]
 
-    # Test 1: Get messages (existing functionality)
-    messages = list(client.get_messages(max_results=3))
-
-    if not messages:
+    if not files:
         return
 
-    for _i, _msg in enumerate(messages, 1):
-        pass
+    file_info = storage.get_metadata(files[0].path)
+    content = storage.download(file_info.path)
+    print(f"{file_info.name}: {file_info.size} bytes")  # noqa: T201
+    print(f"Downloaded {len(content)} bytes.")  # noqa: T201
 
-    # Test 2: Get a specific message by ID
-    if messages:
-        test_message_id = messages[0].id
-        with contextlib.suppress(Exception):
-            pass
+    try:
+        confirmation = input(f"Type 'DELETE' to delete {file_info.path}: ")
+    except EOFError:
+        return
 
-    # Test 3: Mark a message as read
-    if messages:
-        test_message_id = messages[0].id
-        with contextlib.suppress(Exception):
-            success = client.mark_as_read(test_message_id)
-            if success:
-                pass
-            else:
-                pass
-
-    # Test 4: Delete a message (WARNING: This is destructive!)
-    # Only test if we have more than one message to avoid deleting all messages
-    if len(messages) > 1:
-        # Ask for confirmation before deleting
-        delete_message_id = messages[-1].id  # Delete the last message
-        try:
-            confirmation = input("Type 'DELETE' to confirm deletion: ")
-            if confirmation == "DELETE":
-                success = client.delete_message(delete_message_id)
-                if success:
-                    logger.info("Message with ID %s deleted.", delete_message_id)
-                else:
-                    logger.info("Failed to delete message with ID %s.", delete_message_id)
-        except EOFError:
-            # This means that CircleCI or another non-interactive environment is not going to actually delete anything
-            pass
-    else:
-        pass
-
-    print("Demo complete.")  # noqa: T201
-
-
-if __name__ == "__main__":
-    main()
+    if confirmation == "DELETE":
+        storage.delete(file_info.path)
+        print(f"Deleted {file_info.path}.")  # noqa: T201
