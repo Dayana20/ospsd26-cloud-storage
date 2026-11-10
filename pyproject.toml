@@ -1,14 +1,13 @@
 [project]
-name = "ta-assignment"
+name = "ospsd26-cloud-storage"
 version = "0.1.0"
-description = "Template repository for a mail client"
+description = "Shared contract for cloud storage services"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = ["cloud-storage-api"]
 
 [project.optional-dependencies]
 dev = [
-    "google-api-python-client-stubs>=1.30.0",
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.6.15",
     "mkdocstrings-python>=1.16.12",
@@ -30,7 +29,7 @@ cloud-storage-api = { workspace = true }
 
 [tool.ruff]
 line-length = 130 # high for top level due to tests
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["ALL"]

@@ -1,86 +1,93 @@
-# Python Application Template: A Component-Based Mail Client
+# Python Application Template: A Component-Based Cloud Storage API
 
-[![CircleCI](https://circleci.com/gh/ivanearisty/oss-taapp.svg?style=shield)](https://circleci.com/gh/ivanearisty/oss-taapp)
-[![Coverage](https://img.shields.io/badge/coverage-85%2B%25-brightgreen)](https://circleci.com/gh/ivanearisty/oss-taapp)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://python.org)
+[![CircleCI](https://circleci.com/gh/Dayana20/ospsd26-cloud-storage.svg?style=shield)](https://circleci.com/gh/Dayana20/ospsd26-cloud-storage)
+[![Coverage](https://img.shields.io/badge/coverage-85%2B%25-brightgreen)](https://circleci.com/gh/Dayana20/ospsd26-cloud-storage)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://python.org)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-This repository serves as a professional-grade template for a modern Python project. It demonstrates a robust, component-based architecture by building the core components for an AI-powered email assistant that interacts with the Gmail API.
+This repository defines a shared, provider-independent contract for document
+storage. It demonstrates a component-based architecture by defining the common
+operations, file metadata, and errors that storage-provider implementations
+can share.
 
-The project emphasizes a strict separation of concerns, dependency injection, and a comprehensive, automated toolchain to enforce code quality and best practices.
+The project emphasizes a strict separation of concerns and a comprehensive,
+automated toolchain to enforce code quality and best practices. This repository
+contains the storage contract; concrete provider implementations can be
+developed as separate components.
 
 ## Architectural Philosophy
 
-This project is built on the principle of "programming integrated over time." The architecture is designed to combat complexity and ensure the system is maintainable and evolvable.
+This project is built on the principle of "programming integrated over time."
+The architecture is designed to combat complexity and ensure the system is
+maintainable and evolvable.
 
--   **Component-Based Design:** The system is broken down into four distinct, self-contained components. Each component has a single responsibility and can be "forklifted" out of this project to be used in another with minimal effort.
--   **Interface-Implementation Separation:** Every piece of functionality is defined by an abstract **contract** implemented as an ABC (the "what") and fulfilled by a concrete **implementation** (the "how"). This decouples our business logic from specific technologies (like Gmail).
--   **Dependency Injection:** Implementations are "injected" into the abstract contracts at runtime. This means consumers of the API only ever depend on the stable interface, not the volatile implementation details.
+- **Component-Based Design:** Components have a single responsibility and can
+  be reused in other projects with minimal coupling.
+- **Interface-Implementation Separation:** Functionality is defined by an
+  abstract contract (the "what") and fulfilled by a concrete implementation
+  (the "how"). This decouples storage consumers from provider-specific
+  details.
+- **Dependency Injection:** Applications depend on the stable storage
+  interface and receive a provider implementation separately.
 
 ## Core Components
 
-The project is a `uv` workspace containing four primary packages:
+The project is a `uv` workspace containing the shared contract package:
 
-3.  **`mail_client_api`**: Defines the abstract `Client` base class (ABC). This is the contract for what actions a mail client can perform (e.g., `get_messages`).
-4.  **`gmail_client_impl`**: Provides the `GmailClient` class, a concrete implementation that uses the Google API to perform the actions defined in the `Client` abstraction.
+- **`cloud_storage_api`**: Defines the abstract `DocumentStorage` interface,
+  the `FileInfo` metadata model, and shared storage errors.
+- **Storage provider implementations**: Not included in this repository.
+  Provider adapters can be developed as separate packages implementing the
+  shared contract.
 
 ## Project Structure
 
 ```
-ta-assignment/
+ospsd26-cloud-storage/
 ├── src/                          # Source packages (uv workspace members)
-│   ├── mail_client_api/          # Abstract mail client base class (ABC)  
-│   └── gmail_client_impl/        # Gmail-specific client implementation
-├── tests/                        # Integration and E2E tests
-│   ├── integration/              # Component integration tests
-│   └── e2e/                      # End-to-end application tests
+│   └── cloud_storage_api/        # Shared document-storage contract
+│       ├── src/cloud_storage_api/
+│       └── tests/
+├── tests/                        # Additional project-level tests, when needed
 ├── docs/                         # Documentation source files
 ├── .circleci/                    # CircleCI configuration
-├── main.py                       # Main application entry point
-├── pyproject.toml               # Project configuration (dependencies, tools)
-├── uv.lock                      # Locked dependency versions
-└── credentials.json             # Google OAuth credentials (local only)
+├── main.py                       # Read-only contract usage example
+├── pyproject.toml                # Project configuration (dependencies, tools)
+└── uv.lock                       # Locked dependency versions
 ```
 
 ## Project Setup
 
 ### 1. Prerequisites
 
--   Python 3.11 or higher
--   `uv` – A fast, all-in-one Python package manager.
+- Python 3.12 or higher
+- `uv` – a Python package manager and project tool.
 
 ### 2. Initial Setup
 
-1.  **Install `uv`:**
-    ```bash
-    # macOS / Linux
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    # Windows (PowerShell)
-    irm https://astral.sh/uv/install.ps1 | iex
-    ```
+1. **Install `uv`:**
+   ```bash
+   # macOS / Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   # Windows (PowerShell)
+   irm https://astral.sh/uv/install.ps1 | iex
+   ```
 
-2.  **Clone the Repository:**
-    ```bash
-    git clone <your-repository-url>
-    cd ta-assignment
-    ```
+2. **Clone the repository:**
+   ```bash
+   git clone <your-repository-url>
+   cd ospsd26-cloud-storage
+   ```
 
-3.  **Set Up Google Credentials:**
-    -   Follow the [Google Cloud instructions](https://developers.google.com/gmail/api/quickstart/python#authorize_credentials_for_a_desktop_application) to enable the Gmail API and download your OAuth 2.0 credentials.
-    -   Rename the downloaded file to `credentials.json` and place it in the root of this project.
-    -   **Alternative**: For CI/CD environments, you can use environment variables instead:
-        ```bash
-        export GMAIL_CLIENT_ID="your_client_id"
-        export GMAIL_CLIENT_SECRET="your_client_secret"
-        export GMAIL_REFRESH_TOKEN="your_refresh_token"
-        ```
-    -   **Important:** Credential files contain secrets and are ignored by `.gitignore`.
+3. **Create and sync the virtual environment:**
 
-4.  **Create and Sync the Virtual Environment:**
-    This single command creates a `.venv` folder and installs all packages (including workspace members and development tools) defined in `uv.lock`.
-    ```bash
-    uv sync --all-packages --extra dev
-    ```
+   Create the project-local `.venv` with the supported Python version, then
+   install all workspace packages and development tools defined in `uv.lock`.
+
+   ```bash
+   uv venv --python 3.12
+   uv sync --all-packages --extra dev
+   ```
 
 5.  **Activate the Virtual Environment:**
     ```bash
@@ -130,27 +137,13 @@ uv run python main.py
 
 -   **Testing (Pytest):**
 
-    I'd recommend only running: `uv run pytest src/ tests/ -m "not local_credentials" -v` for simplicity.
+  The shared contract tests are fast and do not require external services.
+  ```bash
+  # Run the cloud storage contract tests
+  uv run pytest src/cloud_storage_api/tests -q
 
-    The project uses a comprehensive testing strategy with different test categories.
-    ```bash
-    # Run all tests (includes unit, integration, and e2e tests)
-    uv run pytest
-
-    # Run only unit tests (fast, no external dependencies - from src/ directories)
-    uv run pytest src/
-
-    # Run all tests except those requiring local credential files
-    uv run pytest src/ tests/ -m "not local_credentials"
-
-    # Run only integration tests (requires environment variables or credentials)
-    uv run pytest -m integration
-
-    # Run only end-to-end tests (requires credentials)
-    uv run pytest -m e2e
-
-    # Run only CircleCI-compatible tests (CI/CD environment)
-    uv run pytest -m circleci
+  # Run all discovered tests
+  uv run pytest
 
     # Run tests with coverage reporting
     uv run pytest --cov=src --cov-report=term-missing
@@ -179,21 +172,19 @@ The project implements a sophisticated testing strategy designed for both local 
 
 ### Test Markers
 
-The project uses pytest markers to categorize tests:
-```bash
-@pytest.mark.unit              # Fast unit tests
-@pytest.mark.integration       # Integration tests
-@pytest.mark.e2e              # End-to-end tests
-@pytest.mark.circleci         # CI/CD compatible
-@pytest.mark.local_credentials # Requires local auth files
+The project defines pytest markers for organizing tests:
+
+```python
+@pytest.mark.unit
+@pytest.mark.integration
+@pytest.mark.e2e
+@pytest.mark.circleci
+@pytest.mark.local_credentials
 ```
 
-### Authentication in Tests
-
-The testing infrastructure handles different authentication scenarios:
-- **Local Development**: Uses `credentials.json` and `token.json` files
-- **CI/CD Environment**: Uses environment variables (`GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`)
-- **Missing Credentials**: Tests fail fast with clear error messages (no hanging)
+Provider integration tests should use the `integration` marker. Provider
+credentials should be supplied through the provider's CI secret context, not
+stored in the repository.
 
 ## Continuous Integration
 

@@ -1,32 +1,45 @@
-# Component Definition
+# Cloud Storage Contract Component
 
-Every workspace component lives under `src/<component_name>/` and represents either an abstract contract implemented as an ABC or a concrete implementation.
+`cloud_storage_api` is the provider-independent contract for document-storage
+adapters. It defines the expected operations and shared data/error types;
+provider-specific behavior belongs in a separate implementation package.
 
-## Directory Layout
-```
-<component_name>/
+## Package layout
+
+```text
+src/cloud_storage_api/
 ├── pyproject.toml
 ├── README.md
-├── src/<component_name>/
+├── src/cloud_storage_api/
 │   ├── __init__.py
-│   └── _impl.py        # only for implementations
-└── tests/              # optional component-scoped tests
+│   ├── errors.py
+│   ├── interface.py
+│   ├── models.py
+│   └── py.typed
+└── tests/
 ```
 
-## `pyproject.toml` Checklist
-- `[project]`: align `name` with the folder, set `version`, `description`, `readme = "README.md"`, `requires-python = ">=3.11"`, and list direct dependencies.
-- `[build-system]`: keep `hatchling` as the backend.
-- `[tool.uv.sources]`: declare workspace dependencies when another component is required.
+## Public API
 
-## README Expectations
-Document, at minimum: overview, scope, exposed interfaces, usage pattern, and component dependencies. Keep examples using absolute imports.
+- `DocumentStorage`: abstract operations for creating, replacing, downloading,
+  inspecting, listing, moving, and deleting files, plus a health check.
+- `FileInfo`: provider-neutral file or folder metadata.
+- `StorageError` and its subclasses: shared error types with status and code
+  attributes.
 
-## Implementation Notes (`_impl.py`)
-Place concrete classes here so `__init__.py` can focus on exports and dependency injection wiring.
+The package exports its public types from `cloud_storage_api`. It does not
+provide a factory or concrete provider implementation; applications receive a
+provider adapter through dependency injection.
 
-## Package Initialisation (`__init__.py`)
-- Contract packages: define the ABC and `get_*` factory that raises `NotImplementedError`.
-- Implementation packages: import the contract, expose factories like `get_*_impl`, and rebind the factory (e.g., `contract.get_* = get_*_impl`). Use `__all__` for any public symbols.
+## Provider adapters
+
+An adapter should implement all abstract methods, follow the behavioral
+contracts documented on `DocumentStorage`, return `FileInfo` values, and map
+provider failures to the shared storage errors. Provider credentials and
+provider-specific configuration belong to the adapter, not this contract.
 
 ## Testing
-Component-level tests belong in `tests/`. Target the public interface, use mocks to isolate external services, and keep fixtures local to the component.
+
+Contract tests live in `src/cloud_storage_api/tests/` and run without
+credentials. Provider packages should test their adapter separately, including
+integration tests with provider credentials kept in a CI secret context.
