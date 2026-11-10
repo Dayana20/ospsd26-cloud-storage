@@ -6,16 +6,16 @@ from http import HTTPStatus
 import httpx2
 import pytest
 
-from conformance.tests.conftest import assert_error, create, metadata
+from conformance.tests.conftest import assert_error, create, metadata, upload
 
 # The metadata route isn't final yet.
 pytestmark = pytest.mark.proposed("metadata route")
 
-FIELDS = {"id", "name", "path", "size", "modified_at"}
+FIELDS = {"id", "name", "path", "size", "modified_at", "etag"}
 
 
 def test_metadata(api: httpx2.Client, root: str) -> None:
-    """Metadata has id, name, path, size and modified_at."""
+    """Metadata has the FileInfo fields from cloud_storage_api."""
     create(api, root + "/docs/report.pdf", b"12345")
     resp = metadata(api, root + "/docs/report.pdf")
     assert resp.status_code == HTTPStatus.OK
@@ -43,7 +43,13 @@ def test_modified_at_has_timezone(api: httpx2.Client, root: str) -> None:
     assert abs(datetime.now(UTC) - modified) < timedelta(hours=1)
 
 
-@pytest.mark.proposed("UTC timestamps")
+def test_etag_changes_on_replace(api: httpx2.Client, root: str) -> None:
+    """Etag changes when the file changes."""
+    before = create(api, root + "/file.txt", b"old")["etag"]
+    upload(api, root + "/file.txt", b"new", method="PUT")
+    assert metadata(api, root + "/file.txt").json()["etag"] != before
+
+
 def test_modified_at_is_utc(api: httpx2.Client, root: str) -> None:
     """modified_at ends in Z."""
     create(api, root + "/file.txt")

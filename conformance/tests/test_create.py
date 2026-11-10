@@ -3,7 +3,6 @@
 from http import HTTPStatus
 
 import httpx2
-import pytest
 
 from conformance.tests.conftest import assert_error, create, download, list_folder, upload
 
@@ -29,7 +28,6 @@ def test_create_in_new_folder(api: httpx2.Client, root: str) -> None:
     assert list_folder(api, root + "/a/b").status_code == HTTPStatus.OK
 
 
-@pytest.mark.proposed("409 vs 422, issue #4")
 def test_create_existing_file(api: httpx2.Client, root: str) -> None:
     """Creating over an existing file gives 409 and doesn't overwrite it."""
     create(api, root + "/file.txt", b"old")

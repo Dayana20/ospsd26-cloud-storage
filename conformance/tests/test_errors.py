@@ -7,7 +7,8 @@ import pytest
 
 from conformance.tests.conftest import assert_error
 
-pytestmark = pytest.mark.proposed("error codes, issue #4")
+# route_not_found and method_not_allowed aren't in cloud_storage_api yet (#4).
+pytestmark = pytest.mark.proposed("route and method errors")
 
 
 def test_unknown_route(api: httpx2.Client) -> None:

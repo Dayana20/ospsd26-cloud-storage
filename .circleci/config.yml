@@ -7,7 +7,7 @@ jobs:
   # Job 1: Setup Environment and Install All Dependencies
   build:
     docker:
-      - image: cimg/python:3.11 # Use a consistent Python version
+      - image: cimg/python:3.12 # Use a consistent Python version
     steps:
       - checkout
       - run:
@@ -21,7 +21,7 @@ jobs:
           name: "Create Virtual Env & Install All Dependencies via UV Sync"
           command: |
             # Create venv in the default .venv location
-            uv venv --python 3.11
+            uv venv --python 3.12
             source .venv/bin/activate
             # Install all dependencies including dev/test extras
             uv sync --all-packages --extra dev --verbose
@@ -43,7 +43,7 @@ jobs:
   # Job 2: Linting and Formatting Checks
   lint:
     docker:
-      - image: cimg/python:3.11
+      - image: cimg/python:3.12
     steps:
       - attach_workspace:
           at: . # Attach the workspace persisted from 'build'
@@ -56,7 +56,7 @@ jobs:
   # Job 3: Unit Tests and Coverage (Fast, No External Dependencies)
   unit_test:
     docker:
-      - image: cimg/python:3.11
+      - image: cimg/python:3.12
     steps:
       - attach_workspace:
           at: . # Attach the workspace persisted from 'build'
@@ -90,8 +90,7 @@ jobs:
   # Job 4: CircleCI Integration Tests (All Tests Except Local Credentials)
   circleci_test:
     docker:
-      - image: cimg/python:3.11
-    # Environment variables from the 'gmail-client' context will be available here
+      - image: cimg/python:3.12
     steps:
       - attach_workspace:
           at: . # Attach the workspace persisted from 'build'
@@ -115,43 +114,28 @@ jobs:
       - store_artifacts:
           path: test-results/circleci
 
-  # Job 5: Integration Tests with Real Credentials (Optional - Branch Restricted)
+  # Job 5: Provider integration tests (enabled when integration tests exist)
   integration_test:
     docker:
-      - image: cimg/python:3.11
-    # Environment variables from the 'gmail-client' context will be available here
+      - image: cimg/python:3.12
     steps:
       - attach_workspace:
-          at: . # Attach the workspace persisted from 'build'
+          at: .
       - run:
-          name: "Verify Environment Variables"
+          name: "Run Provider Integration Tests"
           command: |
-            echo "Checking for required environment variables..."
-            if [ -z "$GMAIL_CLIENT_ID" ] || [ -z "$GMAIL_CLIENT_SECRET" ] || [ -z "$GMAIL_REFRESH_TOKEN" ]; then
-              echo "WARNING: Missing Gmail environment variables. Integration tests may be skipped."
-              echo "Required: GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN"
-            else
-              echo "All required environment variables are present."
+            source .venv/bin/activate
+            set +e
+            pytest --collect-only -q -m "integration and not local_credentials" src/ tests/
+            status=$?
+            set -e
+            if [ "$status" -eq 5 ]; then
+              echo "No provider integration tests are defined yet; skipping."
+              exit 0
+            elif [ "$status" -ne 0 ]; then
+              exit "$status"
             fi
-      - run:
-          name: "Activate Venv and Create Test Results Directory"
-          command: |
-            source .venv/bin/activate
-            mkdir -p test-results/integration # Separate directory for results
-      - run:
-          name: "Execute Integration Test Suite with Real API Calls"
-          command: |
-            source .venv/bin/activate
-            # Run integration tests that require real Gmail API connectivity
-            # These will use environment variables for authentication
-            # Note: No coverage tracking for integration tests - they test component interactions
-            pytest -m "integration and not local_credentials" \
-                   --junitxml=test-results/integration/junit.xml -v \
-                   --no-cov
-      - store_test_results:
-          path: test-results/integration
-      - store_artifacts:
-          path: test-results/integration
+            pytest -m "integration and not local_credentials" src/ tests/ --no-cov -v
 
   # Job 6: Report Summary
   report_summary:
@@ -183,15 +167,6 @@ jobs:
               echo "CircleCI test results file found."
             else
               echo "CircleCI test results file not found."
-            fi
-      - run:
-          name: "Summarize Integration Test Results"
-          command: |
-            echo "--- Integration Test Summary ---"
-            if [ -f test-results/integration/junit.xml ]; then
-              echo "Integration test results file found."
-            else
-              echo "Integration test results file not found."
             fi
       - run:
           name: "Display Coverage Info"
@@ -267,8 +242,8 @@ workflows:
                 - kamen-requierd-fixes
                 - make-real-deletions
 
-  # Enhanced workflow: Full tests with real credentials (main/develop only)
-  full_integration:
+  # Run full checks, including provider integration, on main and develop.
+  main_and_develop:
     jobs:
       - build:
           filters:
@@ -314,8 +289,8 @@ workflows:
 
       - integration_test:
           requires:
-            - circleci_test # Run after CircleCI tests pass
-          context: gmail-client # Context containing Gmail API credentials
+            - circleci_test
+          context: cloud-storage
           filters:
             branches:
               only:
@@ -323,7 +298,7 @@ workflows:
                 - develop
                 - kamen-requierd-fixes
                 - make-real-deletions
-                
+
       - report_summary:
           requires:
             - unit_test

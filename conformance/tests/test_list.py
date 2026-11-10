@@ -7,7 +7,8 @@ import pytest
 
 from conformance.tests.conftest import assert_error, create, list_folder
 
-pytestmark = pytest.mark.proposed("list, issue #3")
+# The list route isn't final yet (#10).
+pytestmark = pytest.mark.proposed("list route")
 
 
 def test_list_sorted(api: httpx2.Client, root: str) -> None:
@@ -35,13 +36,15 @@ def test_list_file_info(api: httpx2.Client, root: str) -> None:
         assert entry[field] == created[field]
 
 
-@pytest.mark.proposed("folder marker in list")
 def test_list_types(api: httpx2.Client, root: str) -> None:
-    """Each entry has type file or folder."""
+    """Each entry has type file or folder. Folders have no size or modified_at."""
     create(api, root + "/file.txt")
     create(api, root + "/sub/inner.txt")
-    types = {e["name"]: e["type"] for e in list_folder(api, root).json()}
-    assert types == {"file.txt": "file", "sub": "folder"}
+    entries = {e["name"]: e for e in list_folder(api, root).json()}
+    assert entries["file.txt"]["type"] == "file"
+    assert entries["sub"]["type"] == "folder"
+    assert entries["sub"]["size"] is None
+    assert entries["sub"]["modified_at"] is None
 
 
 def test_list_no_paging(api: httpx2.Client, root: str) -> None:

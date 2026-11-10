@@ -3,9 +3,11 @@
 Tests that every storage service (Team 1, Team 3, Team 6) should pass. They only use
 the HTTP API, so the same tests work against any of the services.
 
-`reference/` is a small in-memory version of the API. By default the tests run against
-it, so CI doesn't need any credentials. If a test fails against the reference app, the
-test is wrong.
+`reference/` serves any `cloud_storage_api.DocumentStorage` over HTTP. By default it
+uses `MemoryStorage`, an in-memory implementation, so CI doesn't need any credentials.
+If a test fails against the reference app, the test is wrong.
+
+The reference app can also serve your own adapter, e.g. `build_app(MyStorage())`.
 
 ## Running
 
@@ -29,12 +31,13 @@ point it at a test bucket or app folder, not one with real data.
 
 Tests marked `@pytest.mark.proposed` check rules that are still being discussed:
 
-- 409 when creating a file that exists (#4)
-- `/files/download?path=` and `/files/metadata?path=` routes
-- `modified_at` in UTC ending in `Z`
-- list response and the `type` field for folders (#3)
+- `/files/download?path=` and `/files/metadata?path=` routes (#8)
+- `GET /files?path=` list route (#10)
 - move (#5)
 - `route_not_found` and `method_not_allowed` (#4)
+
+Error codes, `FileInfo` fields (including `etag` and `type`) and UTC timestamps follow
+`cloud_storage_api` 0.2.0, so those tests aren't marked.
 
 When a rule is agreed, remove the marker. If it changes, update the test and the
 reference app.
