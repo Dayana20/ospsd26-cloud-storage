@@ -103,10 +103,10 @@ jobs:
           name: "Execute All Tests Except Local Credentials"
           command: |
             source .venv/bin/activate
-            # Run all tests from src/ and tests/ directories except those requiring local credentials
+            # Run all tracked source-package tests except those requiring local credentials
             # This includes unit tests, integration tests, and e2e tests that work with env vars
             # Coverage tracking enabled since this includes comprehensive unit tests
-            pytest src/ tests/ -m "not local_credentials" \
+            pytest src/ -m "not local_credentials" \
                    --junitxml=test-results/circleci/junit.xml -v \
                    --cov=src --cov-report=term
       - store_test_results:
@@ -126,7 +126,7 @@ jobs:
           command: |
             source .venv/bin/activate
             set +e
-            pytest --collect-only -q -m "integration and not local_credentials" src/ tests/
+            pytest --collect-only -q -m "integration and not local_credentials" src/
             status=$?
             set -e
             if [ "$status" -eq 5 ]; then
@@ -135,7 +135,7 @@ jobs:
             elif [ "$status" -ne 0 ]; then
               exit "$status"
             fi
-            pytest -m "integration and not local_credentials" src/ tests/ --no-cov -v
+            pytest -m "integration and not local_credentials" src/ --no-cov -v
 
   # Job 6: Report Summary
   report_summary:

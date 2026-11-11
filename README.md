@@ -30,6 +30,12 @@ maintainable and evolvable.
 - **Dependency Injection:** Applications depend on the stable storage
   interface and receive a provider implementation separately.
 
+## Streaming Downloads
+
+| Operation | Return value | Errors and stream lifecycle |
+| --- | --- | --- |
+| `open_download(path)` | A `DownloadStream` with `info`, `chunks()`, and `close()` | Download errors are raised before the stream is returned. A mid-stream read failure may still be raised by `chunks()`. The caller must call `close()` on completion, failure, and client disconnect. |
+
 ## Core Components
 
 The project is a `uv` workspace containing the shared contract package:
