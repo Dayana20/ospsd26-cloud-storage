@@ -1,8 +1,10 @@
 """Provider interface that every storage adapter implements."""
 
 from abc import ABC, abstractmethod
+from typing import BinaryIO
 
 from .models import FileInfo
+from .streams import BytesDownload, DownloadStream
 
 
 class DocumentStorage(ABC):
@@ -19,6 +21,29 @@ class DocumentStorage(ABC):
     @abstractmethod
     def download(self, path: str) -> bytes:
         """Return the exact bytes of a file."""
+
+    def open_download(self, path: str) -> DownloadStream:
+        """Open a lazy download.
+
+        The lookup is eager: errors such as NotFoundError are raised here, before the
+        first chunk, and ``info`` is available on the result. The caller must close the
+        result, preferably with a ``with`` block. The default makes two provider calls
+        (metadata, then download); adapters that can stream should override it.
+        """
+        info = self.get_metadata(path)
+        return BytesDownload(info, self.download(path))
+
+    def create_stream(self, path: str, stream: BinaryIO) -> FileInfo:
+        """Create a file from a readable binary stream.
+
+        The caller owns ``stream`` and the adapter never closes it. The default
+        reads the whole stream; adapters that can stream should override it.
+        """
+        return self.create(path, stream.read())
+
+    def replace_stream(self, path: str, stream: BinaryIO) -> FileInfo:
+        """Replace a file from a readable binary stream. Same ownership rules as create_stream."""
+        return self.replace(path, stream.read())
 
     @abstractmethod
     def get_metadata(self, path: str) -> FileInfo:
