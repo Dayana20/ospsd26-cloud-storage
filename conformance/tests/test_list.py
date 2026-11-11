@@ -3,12 +3,8 @@
 from http import HTTPStatus
 
 import httpx2
-import pytest
 
 from conformance.tests.conftest import assert_error, create, list_folder
-
-# The list route isn't final yet (#10).
-pytestmark = pytest.mark.proposed("list route")
 
 
 def test_list_sorted(api: httpx2.Client, root: str) -> None:

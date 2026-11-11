@@ -32,12 +32,12 @@ point it at a test bucket or app folder, not one with real data.
 Tests marked `@pytest.mark.proposed` check rules that are still being discussed:
 
 - `/files/download?path=` and `/files/metadata?path=` routes (#8)
-- `GET /files?path=` list route (#10)
 - move (#5)
 - `route_not_found` and `method_not_allowed` (#4)
 
 Error codes, `FileInfo` fields (including `etag` and `type`) and UTC timestamps follow
-`cloud_storage_api` 0.2.0, so those tests aren't marked.
+`cloud_storage_api` 0.2.0, and the `GET /files?path=` list route was agreed in #10, so
+those tests aren't marked.
 
 When a rule is agreed, remove the marker. If it changes, update the test and the
 reference app.
