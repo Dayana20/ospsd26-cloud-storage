@@ -65,6 +65,10 @@ class BytesDownload(DownloadStream):
 
     def chunks(self, size: int = DEFAULT_CHUNK_SIZE) -> Iterator[bytes]:
         """Yield the bytes in chunks. Raise ValueError if the stream is closed."""
+        if size <= 0:
+            msg = "Chunk size must be positive."
+            raise ValueError(msg)
+
         for start in range(0, len(self._data), size):
             if self._closed:
                 msg = "The download is closed."

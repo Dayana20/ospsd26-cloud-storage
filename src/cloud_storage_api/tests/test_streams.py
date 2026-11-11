@@ -1,5 +1,7 @@
 """Tests for streaming download helpers."""
 
+from io import BytesIO
+
 import pytest
 
 from cloud_storage_api import DocumentStorage, FileInfo, NotFoundError
@@ -108,3 +110,28 @@ def test_reading_a_closed_download_raises() -> None:
         pass
     with pytest.raises(ValueError, match="closed"):
         list(download.chunks())
+
+
+@pytest.mark.parametrize("size", [0, -1])
+def test_chunks_reject_non_positive_sizes(size: int) -> None:
+    """Reject chunk sizes that cannot make progress."""
+    storage = MemoryStorage()
+    storage.files["/a.txt"] = CONTENT
+
+    with (
+        storage.open_download("/a.txt") as download,
+        pytest.raises(ValueError, match="Chunk size must be positive"),
+    ):
+        list(download.chunks(size))
+
+
+def test_create_stream_default_reads_from_current_position_without_closing() -> None:
+    """Read from the current stream position and leave the stream open."""
+    storage = MemoryStorage()
+    stream = BytesIO(CONTENT)
+    stream.seek(2)
+
+    storage.create_stream("/a.txt", stream)
+
+    assert storage.files["/a.txt"] == CONTENT[2:]
+    assert not stream.closed

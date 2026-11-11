@@ -4,6 +4,7 @@ import pytest
 
 from cloud_storage_api import (
     ConflictError,
+    DocumentStorage,
     FileTooLargeError,
     InvalidOperationError,
     InvalidRequestError,
@@ -34,3 +35,8 @@ def test_error_status_and_code(error: type[StorageError], status: int, code: str
     assert exc.status_code == status
     assert exc.code == code
     assert exc.message == "Error occurred"
+
+
+def test_existing_bytes_operations_remain_abstract() -> None:
+    """Keep the original byte-based operations abstract."""
+    assert {"create", "replace", "download"} <= DocumentStorage.__abstractmethods__

@@ -18,9 +18,9 @@ class DocumentStorage(ABC):
     def replace(self, path: str, content: bytes) -> FileInfo:
         """Replace a file. Raise NotFoundError if missing; never create."""
 
-    # @abstractmethod
-    # def download(self, path: str) -> bytes:
-    #     """Return the exact bytes of a file."""
+    @abstractmethod
+    def download(self, path: str) -> bytes:
+        """Return the exact bytes of a file."""
 
     def open_download(self, path: str) -> DownloadStream:
         """Open a lazy download.
@@ -44,7 +44,6 @@ class DocumentStorage(ABC):
     def replace_stream(self, path: str, stream: BinaryIO) -> FileInfo:
         """Replace a file from a readable binary stream. Same ownership rules as create_stream."""
         return self.replace(path, stream.read())
-
 
     @abstractmethod
     def get_metadata(self, path: str) -> FileInfo:
